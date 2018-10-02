@@ -49,6 +49,21 @@ app.post('/register', (req, res) => {
   });
 });
 
+app.post('/signin', (req, res) => {
+  const { email, password } = req.body;
+  db.select('*')
+   .from('login')
+   .where('email', '=', email)
+   .returning('*')
+   .then(user => {
+     if (bcrypt.compareSync(password, user[0].password)) {
+       res.json('logged in');
+     } else {
+       res.status(400).json('wrong credentials');
+     }
+   });
+});
+
 app.get('/profile/:id', (req, res) => {
   const id = req.params.id;
   db.select('*').from('users').where({id})
@@ -58,8 +73,7 @@ app.get('/profile/:id', (req, res) => {
     } else {
       res.status(404).json('not found');
     }
-    console.log(user.length);
-  })
+  });
 });
 
 app.delete('/delete/:id', (req, res) => {
@@ -83,8 +97,8 @@ app.delete('/delete/:id', (req, res) => {
   })
   .catch(err => {
     res.status(400).json('not deleted');
-  })
-})
+  });
+});
 
 app.listen(3000, () => {
   console.log('App running on port 3000');
