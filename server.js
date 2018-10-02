@@ -62,6 +62,30 @@ app.get('/profile/:id', (req, res) => {
   })
 });
 
+app.delete('/delete/:id', (req, res) => {
+  const { id } = req.params;
+  db.transaction(trx => {
+    trx('users')
+     .where('id', id)
+     .del()
+     .returning('email')
+     .then(userEmail => {
+       return trx('login')
+        .where('email', userEmail[0])
+        .del()
+        .returning('*')
+        .then(data => {
+          res.json('account deleted')
+        })
+     })
+     .then(trx.commit)
+     .catch(trx.rollback)
+  })
+  .catch(err => {
+    res.status(400).json('not deleted');
+  })
+})
+
 app.listen(3000, () => {
   console.log('App running on port 3000');
 })
