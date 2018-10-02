@@ -19,8 +19,34 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-app.get('/', (req, res) => {
-  res.send('Hello Express');
+app.post('/register', (req, res) => {
+  const { name, email, password } = req.body;
+  const hash = bcrypt.hashSync(password);
+  db.transaction(trx => {
+    trx.insert({
+      password: hash,
+      email: email
+    })
+    .into('login')
+    .returning('email')
+    .then(loginEmail => {
+      return trx('users')
+      .insert({
+        email: loginEmail[0],
+        name: name,
+        joinedat: new Date()
+      })
+      .returning('*')
+      .then(user => {
+        res.json(user[0]);
+      })
+    })
+    .then(trx.commit)
+    .catch(trx.rollback)
+  })
+  .catch(err => {
+    return res.status(400).json('unable to register');
+  });
 });
 
 app.listen(3000, () => {
