@@ -49,6 +49,19 @@ app.post('/register', (req, res) => {
   });
 });
 
+app.get('/profile/:id', (req, res) => {
+  const id = req.params.id;
+  db.select('*').from('users').where({id})
+  .then(user => {
+    if (user.length) {
+      res.json(user[0])
+    } else {
+      res.status(404).json('not found');
+    }
+    console.log(user.length);
+  })
+});
+
 app.listen(3000, () => {
   console.log('App running on port 3000');
 })
