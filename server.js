@@ -114,6 +114,37 @@ app.patch('/image', (req, res) => {
    });
 });
 
+app.patch('/update/:email', (req, res) => {
+  const {name, email, password } = req.body;
+  const userEmail = req.params.email;
+  db.transaction(trx => {
+    trx('login')
+     .where('email', '=', userEmail)
+     .update({
+       email: email,
+       password: password
+     })
+     .returning('email')
+     .then(updatedEmail => {
+       return trx('users')
+         .where('email', '=', userEmail)
+         .update({
+           email: updatedEmail[0],
+           name: name
+         })
+         .returning('*')
+         .then(user => {
+           res.json(user[0]);
+         })
+     })
+     .then(trx.commit)
+     .catch(trx.rollback)
+  })
+  .catch(err => {
+    res.status(400).json('not updated');
+  })
+})
+
 app.listen(3000, () => {
   console.log('App running on port 3000');
 })
