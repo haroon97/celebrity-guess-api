@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
 const knex = require('knex');
 const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const generatePassword = require('password-generator');
 
 const db = knex({
   client: 'pg',
@@ -13,6 +15,14 @@ const db = knex({
   database : 'demographicsapp'
 }
 });
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+         user: 'haroonrmit@gmail.com',
+         pass: 'chaingang345'
+     }
+ })
 
 const app = express();
 
@@ -142,9 +152,36 @@ app.patch('/update/:email', (req, res) => {
   })
   .catch(err => {
     res.status(400).json('not updated');
+  });
+});
+
+app.post('/forgot', (req, res) => {
+  const { email } = req.body;
+  let newPassword = generatePassword();
+  db.select('*').from('login')
+  .where('email', '=', email)
+  .returning('*')
+  .then(user => {
+    if (user.length > 0) {
+      mailOptions = {
+      from: 'haroonrmit@gmail.com', 
+      to: `${email}`, 
+      subject: 'Password reset', 
+      html: `<p>Your new password is ${newPassword}</p>`
+      };
+      transporter.sendMail(mailOptions);
+      db('login')
+      .where({email: user[0].email})
+      .update({
+      password: newPassword
+      })
+      res.json(user[0]);
+    } else {
+    res.status(404).json('email not found');
+   }
   })
-})
+});
 
 app.listen(3000, () => {
   console.log('App running on port 3000');
-})
+});
